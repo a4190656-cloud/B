@@ -1,649 +1,236 @@
-```react
-import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowLeft, ShieldCheck, Heart, Zap, Sunrise, Target, BrainCircuit, RefreshCcw, Activity } from 'lucide-react';
-
-// --- Data ---
-const QUESTIONS = [
-  { id: 1, text: 'כשאתה עושה טעות, האם הקול הפנימי שלך מעודד אותך כמו חבר טוב במקום לבקר אותך בחומרה?', category: 'compassion' },
-  { id: 2, text: 'האם קל לך להגיד "לא" לדברים שלא מתאימים לך, בלי להרגיש אשמה כבדה?', category: 'boundaries' },
-  { id: 3, text: 'האם אתה מצליח לגלוש ברשתות חברתיות בלי להרגיש ש"החיים של אחרים טובים יותר משלי"?', category: 'comparison' },
-  { id: 4, text: 'כשאתה מסתכל במראה, האם אתה מוצא לפחות דבר אחד שאתה אוהב במקום להתמקד רק בפגמים?', category: 'compassion' },
-  { id: 5, text: 'כשמישהו מחמיא לך, האם אתה אומר "תודה" בביטחון במקום להצטנע או להסביר למה זה לא נכון?', category: 'confidence' },
-  { id: 6, text: 'האם אתה נהנה מהזמן שלך עם עצמך (לבד) ומרגיש שזה ממלא אותך באנרגיה?', category: 'growth' },
-  { id: 7, text: 'האם אתה מסוגל לשחרר טעויות מהעבר ולא "לטחון" אותן בראש שוב ושוב?', category: 'compassion' },
-  { id: 8, text: 'האם אתה נותן עדיפות לצרכים הפיזיים והרגשיים שלך (שינה, אוכל טוב, מנוחה) גם כשאתה עמוס?', category: 'boundaries' },
-  { id: 9, text: 'האם אתה חוגג ניצחונות קטנים של עצמך, גם אם אף אחד אחר לא רואה אותם?', category: 'confidence' },
-  { id: 10, text: 'האם אתה מקבל החלטות לפי מה שטוב לך, ולא לפי מה ש"אנשים יגידו"?', category: 'comparison' },
-  { id: 11, text: 'האם אתה סומך על תחושות הבטן שלך כשאתה צריך לקבל החלטה גדולה?', category: 'growth' },
-  { id: 12, text: 'האם אתה משקיע זמן או כסף בלמידה ובצמיחה אישית כי אתה מאמין שמגיע לך להתפתח?', category: 'growth' },
-  { id: 13, text: 'האם אתה מסוגל להקשיב לביקורת בלי להרגיש שכל הערך העצמי שלך קורס?', category: 'confidence' },
-  { id: 14, text: 'האם אתה מאמין שיש לך את הכוח להתמודד עם אתגרים חדשים שהחיים יציבו לך?', category: 'confidence' },
-  { id: 15, text: 'האם אתה מרגיש שאתה אדם בעל ערך, בלי קשר לכמה כסף יש לך או מה התפקיד שלך בעבודה?', category: 'comparison' },
-  { id: 16, text: 'האם אתה מרגיש שלם עם הקצב האישי שלך בחיים, גם כשנראה שאחרים "מתקדמים" מהר יותר?', category: 'comparison' },
-  { id: 17, text: 'האם אתה מרגיש בנוח לבקש עזרה כשקשה לך, מתוך הבנה שזה לא מוריד מהערך שלך?', category: 'boundaries' },
-  { id: 18, text: 'האם אתה מרגיש הכרת תודה כלפי הגוף שלך על מה שהוא מאפשר לך לעשות, בלי קשר לנראות שלו?', category: 'compassion' }
-];
-
-const OPTIONS = [
-  { value: 1, label: 'בכלל לא' },
-  { value: 2, label: 'לפעמים' },
-  { value: 3, label: 'לרוב' },
-  { value: 4, label: 'תמיד' }
-];
-
-const CATEGORIES = {
-  compassion: { label: 'חמלה וקבלה עצמית', color: '#40E0D0' },
-  boundaries: { label: 'הצבת גבולות', color: '#38bdf8' },
-  comparison: { label: 'שחרור מהשוואות', color: '#818cf8' },
-  confidence: { label: 'ביטחון והישגים', color: '#c084fc' },
-  growth: { label: 'צמיחה ואינטואיציה', color: '#f472b6' }
-};
-
-// --- Ambient Particles ---
-const AmbientParticles = () => {
-  const particles = useMemo(() => Array.from({ length: 30 }).map((_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    size: Math.random() * 2 + 1,
-    duration: Math.random() * 20 + 15, // Made slower and smoother
-    delay: Math.random() * 5,
-  })), []);
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {particles.map(p => (
-        <motion.div
-          key={p.id}
-          className="absolute rounded-full bg-[#40E0D0] blur-[1px]"
-          style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size }}
-          animate={{
-            y: ['0vh', '-100vh'],
-            opacity: [0, 0.4, 0]
-          }}
-          transition={{
-            duration: p.duration,
-            repeat: Infinity,
-            delay: p.delay,
-            ease: "linear"
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
-const AnimatedBackground = ({ mousePos }) => {
-  return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-[#050505]">
-      <motion.div 
-        className="absolute w-[800px] h-[800px] rounded-full blur-[120px] bg-gradient-to-r from-[#40E0D0] to-blue-900 mix-blend-screen opacity-20"
-        animate={{
-          x: mousePos.x * -30 - 400 + window.innerWidth / 2, // Reduced multiplier for gentler parallax
-          y: mousePos.y * -30 - 400 + window.innerHeight / 2,
-        }}
-        transition={{ type: 'tween', ease: 'easeOut', duration: 1 }}
-      />
-      <motion.div 
-        className="absolute w-[600px] h-[600px] rounded-full blur-[150px] bg-[#40E0D0] opacity-10"
-        animate={{
-          x: mousePos.x * 20 + window.innerWidth * 0.7,
-          y: mousePos.y * 20 + window.innerHeight * 0.2,
-        }}
-        transition={{ type: 'tween', ease: 'easeOut', duration: 1 }}
-      />
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-screen"></div>
-      <AmbientParticles />
-    </div>
-  );
-};
-
-const RadarChart = ({ scores }) => {
-  const size = 300;
-  const center = size / 2;
-  const radius = size / 2 - 40;
-  const categories = Object.keys(CATEGORIES);
-  const angleStep = (Math.PI * 2) / categories.length;
-
-  const points = categories.map((cat, i) => {
-    const score = scores[cat] || 0; 
-    const normalizedScore = (score - 1) / 3; 
-    const r = normalizedScore * radius;
-    const x = center + r * Math.sin(i * angleStep);
-    const y = center - r * Math.cos(i * angleStep);
-    return `${x},${y}`;
-  }).join(' ');
-
-  const gridPoints = [0.25, 0.5, 0.75, 1].map(level => {
-    return categories.map((_, i) => {
-      const r = level * radius;
-      const x = center + r * Math.sin(i * angleStep);
-      const y = center - r * Math.cos(i * angleStep);
-      return `${x},${y}`;
-    }).join(' ');
-  });
-
-  return (
-    <div className="relative w-full flex justify-center items-center my-8">
-      {/* Static elegant glow */}
-      <div className="absolute w-64 h-64 bg-[#40E0D0]/10 rounded-full blur-[50px]" />
-      
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible relative z-10">
-        {/* Grid Polygons */}
-        {gridPoints.map((pts, i) => (
-          <polygon key={i} points={pts} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-        ))}
-        
-        {/* Axes */}
-        {categories.map((_, i) => {
-          const x = center + radius * Math.sin(i * angleStep);
-          const y = center - radius * Math.cos(i * angleStep);
-          return <line key={i} x1={center} y1={center} x2={x} y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />;
-        })}
-
-        {/* Data Polygon - smooth initial load, no continuous shaking */}
-        <motion.polygon
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, delay: 1.5, ease: "easeOut" }}
-          points={points}
-          fill="rgba(64, 224, 208, 0.25)"
-          stroke="#40E0D0"
-          strokeWidth="3"
-          className="drop-shadow-[0_0_15px_#40E0D0]"
-        />
-
-        {/* Labels */}
-        {categories.map((cat, i) => {
-          const r = radius + 25;
-          const x = center + r * Math.sin(i * angleStep);
-          const y = center - r * Math.cos(i * angleStep);
-          return (
-            <text
-              key={i}
-              x={x}
-              y={y}
-              fill="white"
-              fontSize="13"
-              textAnchor="middle"
-              alignmentBaseline="middle"
-              className="font-medium opacity-90 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
-            >
-              {CATEGORIES[cat].label}
-            </text>
-          );
-        })}
-      </svg>
-    </div>
-  );
-};
-
-const AnimatedScore = ({ score }) => {
-  const [displayScore, setDisplayScore] = useState(0);
-  const size = 280;
-  const strokeWidth = 10;
-  const center = size / 2;
-  const radius = center - strokeWidth * 2;
-  const circumference = 2 * Math.PI * radius;
-
-  useEffect(() => {
-    let start = 0;
-    const duration = 2500; 
-    const increment = score / (duration / 16); 
-
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= score) {
-        setDisplayScore(score);
-        clearInterval(timer);
-      } else {
-        setDisplayScore(Math.floor(start));
-      }
-    }, 16);
-
-    return () => clearInterval(timer);
-  }, [score]);
-
-  const offset = circumference - (displayScore / 100) * circumference;
-
-  return (
-    <div className="relative flex justify-center items-center mb-16">
-      {/* Static background pulse */}
-      <div className="absolute w-[250px] h-[250px] bg-[#40E0D0] rounded-full blur-[80px] opacity-20 mix-blend-screen" />
-      
-      {/* Rotating dashed outer rings - Absolute positioned so they don't shift layout */}
-      <motion.div 
-        className="absolute w-[280px] h-[280px] rounded-full border border-dashed border-[#40E0D0]/30"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-      />
-      <motion.div 
-        className="absolute w-[295px] h-[295px] rounded-full border border-dotted border-blue-500/20"
-        animate={{ rotate: -360 }}
-        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-      />
-
-      <svg width={size} height={size} className="transform -rotate-90 drop-shadow-[0_0_20px_rgba(64,224,208,0.6)] relative z-10">
-        <circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="none"
-          stroke="rgba(255,255,255,0.03)"
-          strokeWidth={strokeWidth}
-        />
-        <motion.circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="none"
-          stroke="url(#scoreGradient)"
-          strokeWidth={strokeWidth}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 0.1 }}
-        />
-        <defs>
-          <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#40E0D0" />
-            <stop offset="100%" stopColor="#3b82f6" />
-          </linearGradient>
-        </defs>
-      </svg>
-
-      {/* Number Display - Static positioning, no floating animation */}
-      <div className="absolute flex flex-col items-center justify-center text-center mt-2 z-20">
-        <div className="flex items-center gap-2 mb-1">
-          <Activity className="w-4 h-4 text-[#40E0D0]" />
-          <span className="text-sm tracking-widest text-[#40E0D0] uppercase font-mono">מדד התאמה</span>
-        </div>
-        <div className="flex items-start">
-          <span className="text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-gray-400 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]" dir="ltr">
-            {displayScore}
-          </span>
-          <span className="text-3xl text-[#40E0D0] mt-2 font-light">%</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
-export default function App() {
-  const [stage, setStage] = useState('landing'); 
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      setMousePos({
-        x: (e.clientX / window.innerWidth) * 2 - 1,
-        y: (e.clientY / window.innerHeight) * 2 - 1,
-      });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  const handleStart = () => {
-    setStage('quiz');
-    setCurrentQuestion(0);
-    setAnswers({});
-  };
-
-  const handleAnswer = (value) => {
-    const newAnswers = { ...answers, [QUESTIONS[currentQuestion].id]: value };
-    setAnswers(newAnswers);
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Mirror Within | AO Digital</title>
     
-    setTimeout(() => {
-      if (currentQuestion < QUESTIONS.length - 1) {
-        setCurrentQuestion(prev => prev + 1);
-      } else {
-        setStage('results');
-        window.scrollTo(0,0);
-      }
-    }, 400); 
-  };
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide-react@latest"></script>
 
-  const calculateResults = () => {
-    const totalRawScore = Object.values(answers).reduce((a, b) => a + b, 0);
-    let score100 = Math.round(((totalRawScore - 18) / 54) * 100);
-    if (score100 < 1) score100 = 1;
-    if (score100 > 100) score100 = 100;
+    <style>
+        body { background-color: #050505; margin: 0; overflow-x: hidden; color: white; font-family: system-ui, -apple-system, sans-serif; }
+        @keyframes shimmer { 100% { transform: translateX(100%); } }
+        .animate-gradient-x { background-size: 200% 200%; animation: gradient-x 4s linear infinite; }
+        @keyframes gradient-x { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .perspective-1000 { perspective: 1000px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-    let title = '';
-    let description = '';
+    <script type="text/babel">
+        // חיבור הספריות למשתנים של React
+        const { useState, useEffect, useMemo } = React;
+        const { motion, AnimatePresence } = FramerMotion;
+        const { 
+            Sparkles, ArrowLeft, ShieldCheck, Heart, Zap, 
+            Sunrise, Target, BrainCircuit, RefreshCcw, Activity 
+        } = LucideReact;
 
-    if (score100 <= 45) {
-      title = 'צעדים ראשונים של אהבה';
-      description = 'הציון שלך מצביע על כך שאתה נמצא בתחילת המסע. זהו זמן חשוב של התבוננות פנימה והכרה בכך שמגיע לך יותר. יש בך פוטנציאל אדיר לצמיחה, והצעד הראשון הוא ללמוד לדבר אל עצמך בחמלה ולראות את הערך האמיתי שלך.';
-    } else if (score100 <= 75) {
-      title = 'התעוררות מודעת';
-      description = 'אתה נמצא בתהליך יפה של התעוררות פנימית. אתה כבר מזהה את הערך שלך ויודע להציב גבולות בחלק מהמקומות, אך לעיתים עדיין נשאב להשוואות או לביקורת עצמית. הציון משקף בסיס חזק שעליו אפשר לבנות ביטחון עצמי מלא ושלם יותר.';
-    } else {
-      title = 'הארה פנימית';
-      description = 'מדהים! אתה מקרין אור וביטחון מבפנים החוצה. האהבה העצמית שלך חזקה ויציבה. אתה יודע שאתה ראוי, סולח לעצמך על טעויות, וחי מתוך תחושת שלמות עמוקה. המשך לתחזק את המיינדסט הזה ולהאיר לסביבה שלך.';
-    }
+        // --- הנתונים שלך ---
+        const QUESTIONS = [
+            { id: 1, text: 'כשאתה עושה טעות, האם הקול הפנימי שלך מעודד אותך כמו חבר טוב במקום לבקר אותך בחומרה?', category: 'compassion' },
+            { id: 2, text: 'האם קל לך להגיד "לא" לדברים שלא מתאימים לך, בלי להרגיש אשמה כבדה?', category: 'boundaries' },
+            { id: 3, text: 'האם אתה מצליח לגלוש ברשתות חברתיות בלי להרגיש ש"החיים של אחרים טובים יותר משלי"?', category: 'comparison' },
+            { id: 4, text: 'כשאתה מסתכל במראה, האם אתה מוצא לפחות דבר אחד שאתה אוהב במקום להתמקד רק בפגמים?', category: 'compassion' },
+            { id: 5, text: 'כשמישהו מחמיא לך, האם אתה אומר "תודה" בביטחון במקום להצטנע או להסביר למה זה לא נכון?', category: 'confidence' },
+            { id: 6, text: 'האם אתה נהנה מהזמן שלך עם עצמך (לבד) ומרגיש שזה ממלא אותך באנרגיה?', category: 'growth' },
+            { id: 7, text: 'האם אתה מסוגל לשחרר טעויות מהעבר ולא "לטחון" אותן בראש שוב ושוב?', category: 'compassion' },
+            { id: 8, text: 'האם אתה נותן עדיפות לצרכים הפיזיים והרגשיים שלך (שינה, אוכל טוב, מנוחה) גם כשאתה עמוס?', category: 'boundaries' },
+            { id: 9, text: 'האם אתה חוגג ניצחונות קטנים של עצמך, גם אם אף אחד אחר לא רואה אותם?', category: 'confidence' },
+            { id: 10, text: 'האם אתה מקבל החלטות לפי מה שטוב לך, ולא לפי מה ש"אנשים יגידו"?', category: 'comparison' },
+            { id: 11, text: 'האם אתה סומך על תחושות הבטן שלך כשאתה צריך לקבל החלטה גדולה?', category: 'growth' },
+            { id: 12, text: 'האם אתה משקיע זמן או כסף בלמידה ובצמיחה אישית כי אתה מאמין שמגיע לך להתפתח?', category: 'growth' },
+            { id: 13, text: 'האם אתה מסוגל להקשיב לביקורת בלי להרגיש שכל הערך העצמי שלך קורס?', category: 'confidence' },
+            { id: 14, text: 'האם אתה מאמין שיש לך את הכוח להתמודד עם אתגרים חדשים שהחיים יציבו לך?', category: 'confidence' },
+            { id: 15, text: 'האם אתה מרגיש שאתה אדם בעל ערך, בלי קשר לכמה כסף יש לך או מה התפקיד שלך בעבודה?', category: 'comparison' },
+            { id: 16, text: 'האם אתה מרגיש שלם עם הקצב האישי שלך בחיים, גם כשנראה שאחרים "מתקדמים" מהר יותר?', category: 'comparison' },
+            { id: 17, text: 'האם אתה מרגיש בנוח לבקש עזרה כשקשה לך, מתוך הבנה שזה לא מוריד מהערך שלך?', category: 'boundaries' },
+            { id: 18, text: 'האם אתה מרגיש הכרת תודה כלפי הגוף שלך על מה שהוא מאפשר לך לעשות, בלי קשר לנראות שלו?', category: 'compassion' }
+        ];
 
-    const catScores = {};
-    const catCounts = {};
-    Object.keys(answers).forEach(qId => {
-      const q = QUESTIONS.find(q => q.id === parseInt(qId));
-      if (!catScores[q.category]) {
-        catScores[q.category] = 0;
-        catCounts[q.category] = 0;
-      }
-      catScores[q.category] += answers[qId];
-      catCounts[q.category] += 1;
-    });
+        const OPTIONS = [
+            { value: 1, label: 'בכלל לא' },
+            { value: 2, label: 'לפעמים' },
+            { value: 3, label: 'לרוב' },
+            { value: 4, label: 'תמיד' }
+        ];
 
-    const categoryAverages = {};
-    Object.keys(catScores).forEach(cat => {
-      categoryAverages[cat] = catScores[cat] / catCounts[cat];
-    });
+        const CATEGORIES = {
+            compassion: { label: 'חמלה וקבלה עצמית', color: '#40E0D0' },
+            boundaries: { label: 'הצבת גבולות', color: '#38bdf8' },
+            comparison: { label: 'שחרור מהשוואות', color: '#818cf8' },
+            confidence: { label: 'ביטחון והישגים', color: '#c084fc' },
+            growth: { label: 'צמיחה ואינטואיציה', color: '#f472b6' }
+        };
 
-    return { score100, title, description, categoryAverages };
-  };
-
-  return (
-    <div dir="rtl" className="min-h-screen bg-[#050505] text-white font-sans overflow-x-hidden selection:bg-[#40E0D0] selection:text-black">
-      <AnimatedBackground mousePos={mousePos} />
-
-      <main className="relative z-10 min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
-        <AnimatePresence mode="wait">
-          
-          {/* --- LANDING PAGE --- */}
-          {stage === 'landing' && (
-            <motion.div
-              key="landing"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, filter: 'blur(5px)' }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="flex flex-col items-center text-center max-w-5xl mx-auto w-full"
-            >
-              {/* Elegant Image Container without bouncing */}
-              <div 
-                className="relative mb-14 group perspective-1000"
-                style={{
-                  transform: `rotateX(${mousePos.y * -5}deg) rotateY(${mousePos.x * 5}deg)`,
-                  transformStyle: 'preserve-3d',
-                  transition: 'transform 0.1s ease-out'
-                }}
-              >
-                {/* Slow rotating rings behind image */}
-                <motion.div 
-                  className="absolute -inset-4 rounded-full border border-[#40E0D0]/20 border-t-[#40E0D0] blur-[2px]"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                />
-                <motion.div 
-                  className="absolute -inset-8 rounded-full border border-blue-500/10 border-b-blue-500 blur-sm"
-                  animate={{ rotate: -360 }}
-                  transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                />
-
-                <div className="absolute -inset-1 bg-gradient-to-r from-[#40E0D0] to-blue-600 rounded-full blur-2xl opacity-40 group-hover:opacity-70 transition duration-700"></div>
-                <div className="relative w-72 h-72 md:w-96 md:h-96 rounded-full p-2 border border-[#40E0D0]/40 bg-black/50 backdrop-blur-md overflow-hidden shadow-2xl">
-                  <img 
-                    src="https://i.postimg.cc/dhQ4hjK4/image.jpg" 
-                    onError={(e) => {
-                      e.target.onerror = null; 
-                      e.target.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop";
-                    }}
-                    alt="The Mirror Within" 
-                    className="w-full h-full object-cover rounded-full filter brightness-90 contrast-125 hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 rounded-full shadow-[inset_0_0_80px_rgba(0,0,0,0.9)] pointer-events-none"></div>
-                </div>
-              </div>
-
-              <h1 className="text-6xl md:text-8xl font-black tracking-[0.15em] mb-6 animate-gradient-x bg-gradient-to-r from-white via-[#40E0D0] to-white bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(64,224,208,0.2)] bg-[length:200%_auto]" dir="ltr">
-                THE MIRROR WITHIN
-              </h1>
-              <p className="text-xl md:text-2xl text-gray-300 mb-14 max-w-3xl font-light leading-relaxed drop-shadow-md">
-                מסע סייבר-זן עמוק אל תוך התודעה שלך. גלה את רמת האהבה העצמית שלך וקבל מפת דרכים מדויקת לצמיחה.
-              </p>
-
-              <button 
-                onClick={handleStart}
-                className="relative inline-flex group"
-              >
-                <div className="absolute transition-all duration-700 opacity-50 -inset-px bg-gradient-to-r from-[#40E0D0] via-blue-500 to-[#40E0D0] rounded-full blur-xl group-hover:opacity-100 group-hover:-inset-2"></div>
-                <div className="relative inline-flex items-center justify-center px-12 py-5 text-xl font-bold text-black transition-all duration-200 bg-[#40E0D0] rounded-full hover:bg-white overflow-hidden shadow-[0_0_20px_rgba(64,224,208,0.4)]">
-                  <span className="relative z-10 flex items-center gap-3">
-                    התחל מסע <ArrowLeft className="w-6 h-6" />
-                  </span>
-                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
-                </div>
-              </button>
-            </motion.div>
-          )}
-
-          {/* --- QUIZ PAGE --- */}
-          {stage === 'quiz' && (
-            <motion.div
-              key="quiz"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              className="w-full max-w-3xl mx-auto"
-            >
-              {/* Energy Pulse Progress Bar */}
-              <div className="mb-14 relative">
-                <div className="flex justify-between text-base text-[#40E0D0] mb-3 font-mono tracking-wider">
-                  <span>שאלה {currentQuestion + 1} // {QUESTIONS.length}</span>
-                  <motion.span 
-                    key={currentQuestion}
-                    initial={{ color: '#fff' }}
-                    animate={{ color: '#40E0D0' }}
-                  >
-                    {Math.round(((currentQuestion) / QUESTIONS.length) * 100)}%
-                  </motion.span>
-                </div>
-                <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden relative backdrop-blur-sm border border-white/10 shadow-inner">
-                  <motion.div 
-                    className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-[#40E0D0] to-blue-600 shadow-[0_0_20px_#40E0D0]"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${((currentQuestion) / QUESTIONS.length) * 100}%` }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                  >
-                    <motion.div 
-                      className="absolute inset-0 bg-gradient-to-r from-transparent to-white/30"
-                      animate={{ x: ['-100%', '100%'] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    />
-                  </motion.div>
-                </div>
-              </div>
-
-              {/* Question Card - Clean, glassmorphic, stable */}
-              <div className="bg-black/40 backdrop-blur-2xl border border-white/10 p-10 md:p-14 rounded-[2.5rem] shadow-[0_15px_50px_rgba(0,0,0,0.6)] relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-[#40E0D0]/10 rounded-full blur-[80px] pointer-events-none"></div>
-                
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentQuestion}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -15 }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
-                  >
-                    <h2 className="text-3xl md:text-4xl font-semibold leading-tight mb-12 text-white drop-shadow-lg">
-                      {QUESTIONS[currentQuestion].text}
-                    </h2>
-
-                    <div className="space-y-4">
-                      {OPTIONS.map((option, idx) => (
-                        <motion.button
-                          key={option.value}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.1, duration: 0.3 }}
-                          onClick={() => handleAnswer(option.value)}
-                          className="w-full text-right px-8 py-5 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-[#40E0D0]/10 hover:border-[#40E0D0]/50 transition-all duration-300 group flex items-center justify-between hover:shadow-[0_0_20px_rgba(64,224,208,0.15)] hover:-translate-y-1"
-                        >
-                          <span className="text-xl text-gray-300 group-hover:text-white transition-colors">{option.label}</span>
-                          <div className="w-6 h-6 rounded-full border-2 border-gray-600 group-hover:border-[#40E0D0] group-hover:shadow-[0_0_15px_#40E0D0] flex items-center justify-center transition-all">
-                            <div className="w-3 h-3 rounded-full bg-[#40E0D0] opacity-0 group-hover:opacity-100 transition-opacity transform scale-50 group-hover:scale-100"></div>
-                          </div>
-                        </motion.button>
-                      ))}
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </motion.div>
-          )}
-
-          {/* --- RESULTS PAGE --- */}
-          {stage === 'results' && (() => {
-            const results = calculateResults();
+        // --- רכיבי עזר מהקוד שלך ---
+        const AmbientParticles = () => {
+            const particles = useMemo(() => Array.from({ length: 30 }).map((_, i) => ({
+                id: i, x: Math.random() * 100, y: Math.random() * 100, size: Math.random() * 2 + 1,
+                duration: Math.random() * 20 + 15, delay: Math.random() * 5,
+            })), []);
             return (
-              <motion.div
-                key="results"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.8 }}
-                className="w-full max-w-6xl mx-auto py-12"
-              >
-                <div className="text-center mb-20">
-                  <AnimatedScore score={results.score100} />
-                  
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 2.5, duration: 0.8, ease: "easeOut" }}
-                  >
-                    <div className="inline-block px-6 py-2 rounded-full border border-[#40E0D0]/40 bg-[#40E0D0]/10 text-[#40E0D0] text-sm font-bold tracking-widest mb-6 uppercase shadow-[0_0_15px_rgba(64,224,208,0.2)]">
-                      פרופיל אהבה עצמית
-                    </div>
-                    <h1 className="text-5xl md:text-7xl font-black mb-8 text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-200 to-gray-500">
-                      הסטטוס שלך:<br/>
-                      <span className="text-[#40E0D0] drop-shadow-[0_0_20px_rgba(64,224,208,0.5)] bg-none">{results.title}</span>
-                    </h1>
-                    <p className="text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed font-light">
-                      {results.description}
-                    </p>
-                  </motion.div>
+                <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+                    {particles.map(p => (
+                        <motion.div key={p.id} className="absolute rounded-full bg-[#40E0D0] blur-[1px]"
+                            style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size }}
+                            animate={{ y: ['0vh', '-100vh'], opacity: [0, 0.4, 0] }}
+                            transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: "linear" }}
+                        />
+                    ))}
                 </div>
-
-                <motion.div 
-                  className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24"
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 3, duration: 0.8 }}
-                >
-                  {/* Radar Chart Section */}
-                  <div className="bg-black/30 backdrop-blur-xl border border-white/10 rounded-[3rem] p-10 flex flex-col items-center shadow-2xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-[#40E0D0]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                    <h3 className="text-3xl font-bold mb-3 flex items-center gap-3 text-white">
-                      <Target className="text-[#40E0D0] w-8 h-8" /> מפת האנרגיה הפנימית
-                    </h3>
-                    <p className="text-gray-400 text-base mb-8 text-center">ניתוח מדויק של מימדי האהבה העצמית שלך</p>
-                    <RadarChart scores={results.categoryAverages} />
-                  </div>
-
-                  {/* Actionable Steps */}
-                  <div className="space-y-8">
-                    <h3 className="text-4xl font-bold mb-10 flex items-center gap-4 border-b border-white/10 pb-6">
-                      <Sunrise className="text-[#40E0D0] w-10 h-10" /> נתיב הצמיחה שלך
-                    </h3>
-                    
-                    {[
-                      { icon: Heart, color: '#40E0D0', title: 'חמלה ככלי עבודה', text: 'במקום להילחם בקול המבקר, ענה לו בשאלה: "האם הייתי מדבר ככה לאדם שאני אוהב?". אמץ שגרת אפירמציות יומיות מול המראה.' },
-                      { icon: ShieldCheck, color: '#38bdf8', title: 'הנדסת גבולות', text: 'התחל להגיד "תן לי לבדוק ולחזור אליך" במקום "כן" אוטומטי. למד לזהות מתי הצרכים שלך נדחקים הצידה בעבור אחרים.' },
-                      { icon: BrainCircuit, color: '#c084fc', title: 'ניקוי רעלים דיגיטלי', text: 'צמצם משמעותית צריכת תוכן שמעורר בך תחושת חסר. השקע את הזמן הזה בלמידה, תחביבים או פשוט זמן איכות אמיתי עם עצמך.' },
-                    ].map((step, idx) => (
-                      <div 
-                        key={idx}
-                        className="bg-gradient-to-l from-white/[0.03] to-transparent border-l-4 p-8 rounded-r-2xl relative overflow-hidden group hover:bg-white/[0.08] transition-all duration-300 hover:-translate-x-2"
-                        style={{ borderColor: step.color }}
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <h4 className="text-2xl font-semibold flex items-center gap-3 mb-3" style={{ color: step.color }}>
-                          <step.icon className="w-7 h-7" /> {step.title}
-                        </h4>
-                        <p className="text-gray-300 text-lg leading-relaxed">{step.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* What to do next Cards */}
-                <motion.div 
-                  className="mb-16"
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 3.5, duration: 0.8 }}
-                >
-                  <h3 className="text-3xl font-bold mb-10 text-center flex items-center justify-center gap-3">
-                    <Sparkles className="text-[#40E0D0]" /> הצעדים הבאים בסייבר-מרחב
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {[
-                      { title: 'סדנת גבולות וירטואלית', icon: ShieldCheck, color: 'hover:border-[#40E0D0] hover:shadow-[0_0_30px_rgba(64,224,208,0.2)]', iconColor: 'group-hover:text-[#40E0D0]', text: 'למד טכניקות פרקטיות להצבת גבולות בסביבה תובענית ומקוונת.' },
-                      { title: 'מעבדת אפירמציות', icon: Zap, color: 'hover:border-[#f472b6] hover:shadow-[0_0_30px_rgba(244,114,182,0.2)]', iconColor: 'group-hover:text-[#f472b6]', text: 'מערכת אודיו חכמה לתכנות מחדש של תת המודע לפני השינה.' },
-                      { title: 'יומן מסע תלת-ממדי', icon: Target, color: 'hover:border-[#c084fc] hover:shadow-[0_0_30px_rgba(192,132,252,0.2)]', iconColor: 'group-hover:text-[#c084fc]', text: 'תעד את ההתקדמות היומית שלך במרחב ויזואלי אינטראקטיבי.' },
-                    ].map((card, i) => (
-                      <div 
-                        key={i} 
-                        className={`bg-black/60 backdrop-blur-lg border border-white/10 rounded-[2rem] p-8 transition-all duration-500 cursor-pointer group relative overflow-hidden hover:-translate-y-2 ${card.color}`}
-                      >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-white/10 transition-colors"></div>
-                        <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-500">
-                          <card.icon className={`w-8 h-8 text-gray-400 transition-colors duration-500 ${card.iconColor}`} />
-                        </div>
-                        <h4 className="text-xl font-bold mb-3 text-white">{card.title}</h4>
-                        <p className="text-base text-gray-400 leading-relaxed">{card.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                <motion.div 
-                  className="text-center mt-20"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 4, duration: 1 }}
-                >
-                   <button 
-                    onClick={() => { setStage('landing'); window.scrollTo(0,0); }}
-                    className="inline-flex items-center gap-3 text-lg text-gray-400 hover:text-[#40E0D0] transition-colors border border-transparent hover:border-[#40E0D0]/50 px-8 py-3 rounded-full hover:bg-[#40E0D0]/10"
-                  >
-                    <RefreshCcw className="w-5 h-5" /> התחל מסע מחדש
-                  </button>
-                </motion.div>
-              </motion.div>
             );
-          })()}
+        };
 
-        </AnimatePresence>
-      </main>
+        const AnimatedBackground = ({ mousePos }) => (
+            <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-[#050505]">
+                <motion.div className="absolute w-[800px] h-[800px] rounded-full blur-[120px] bg-gradient-to-r from-[#40E0D0] to-blue-900 mix-blend-screen opacity-20"
+                    animate={{ x: mousePos.x * -30 - 400 + window.innerWidth / 2, y: mousePos.y * -30 - 400 + window.innerHeight / 2 }}
+                    transition={{ type: 'tween', ease: 'easeOut', duration: 1 }}
+                />
+                <AmbientParticles />
+            </div>
+        );
 
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes shimmer {
-          100% { transform: translateX(100%); }
+        const RadarChart = ({ scores }) => {
+            const size = 300; const center = size / 2; const radius = size / 2 - 40;
+            const categories = Object.keys(CATEGORIES); const angleStep = (Math.PI * 2) / categories.length;
+            const points = categories.map((cat, i) => {
+                const score = scores[cat] || 0; const r = ((score - 1) / 3) * radius;
+                return `${center + r * Math.sin(i * angleStep)},${center - r * Math.cos(i * angleStep)}`;
+            }).join(' ');
+            return (
+                <div className="relative w-full flex justify-center items-center my-8">
+                    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible relative z-10">
+                        <motion.polygon initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 1, delay: 1.5 }}
+                            points={points} fill="rgba(64, 224, 208, 0.25)" stroke="#40E0D0" strokeWidth="3" />
+                        {categories.map((cat, i) => (
+                            <text key={i} x={center + (radius + 25) * Math.sin(i * angleStep)} y={center - (radius + 25) * Math.cos(i * angleStep)}
+                                fill="white" fontSize="11" textAnchor="middle" className="font-medium">{CATEGORIES[cat].label}</text>
+                        ))}
+                    </svg>
+                </div>
+            );
+        };
+
+        const AnimatedScore = ({ score }) => {
+            const [displayScore, setDisplayScore] = useState(0);
+            useEffect(() => {
+                let start = 0; const duration = 2000; const increment = score / (duration / 16);
+                const timer = setInterval(() => {
+                    start += increment;
+                    if (start >= score) { setDisplayScore(score); clearInterval(timer); }
+                    else { setDisplayScore(Math.floor(start)); }
+                }, 16);
+                return () => clearInterval(timer);
+            }, [score]);
+            return (
+                <div className="relative flex justify-center items-center mb-16">
+                    <div className="text-8xl font-black text-white drop-shadow-[0_0_15px_rgba(64,224,208,0.5)]">
+                        {displayScore}<span className="text-3xl text-[#40E0D0]">%</span>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- הרכיב הראשי ---
+        function App() {
+            const [stage, setStage] = useState('landing');
+            const [currentQuestion, setCurrentQuestion] = useState(0);
+            const [answers, setAnswers] = useState({});
+            const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+            useEffect(() => {
+                const handleMouseMove = (e) => setMousePos({ x: (e.clientX / window.innerWidth) * 2 - 1, y: (e.clientY / window.innerHeight) * 2 - 1 });
+                window.addEventListener('mousemove', handleMouseMove);
+                return () => window.removeEventListener('mousemove', handleMouseMove);
+            }, []);
+
+            const handleAnswer = (value) => {
+                const newAnswers = { ...answers, [QUESTIONS[currentQuestion].id]: value };
+                setAnswers(newAnswers);
+                setTimeout(() => {
+                    if (currentQuestion < QUESTIONS.length - 1) { setCurrentQuestion(prev => prev + 1); }
+                    else { setStage('results'); window.scrollTo(0, 0); }
+                }, 400);
+            };
+
+            const calculateResults = () => {
+                const totalRawScore = Object.values(answers).reduce((a, b) => a + b, 0);
+                let score100 = Math.round(((totalRawScore - 18) / 54) * 100);
+                score100 = Math.max(1, Math.min(100, score100));
+                
+                const catScores = {}; const catCounts = {};
+                Object.keys(answers).forEach(qId => {
+                    const q = QUESTIONS.find(qi => qi.id === parseInt(qId));
+                    if (!catScores[q.category]) { catScores[q.category] = 0; catCounts[q.category] = 0; }
+                    catScores[q.category] += answers[qId]; catCounts[q.category] += 1;
+                });
+                const categoryAverages = {};
+                Object.keys(catScores).forEach(cat => { categoryAverages[cat] = catScores[cat] / catCounts[cat]; });
+
+                return { score100, categoryAverages };
+            };
+
+            return (
+                <div dir="rtl" className="min-h-screen bg-[#050505] text-white font-sans overflow-x-hidden selection:bg-[#40E0D0] selection:text-black">
+                    <AnimatedBackground mousePos={mousePos} />
+                    <main className="relative z-10 min-h-screen flex flex-col items-center justify-center p-4">
+                        <AnimatePresence mode="wait">
+                            {stage === 'landing' && (
+                                <motion.div key="landing" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-center max-w-4xl">
+                                    <h1 className="text-6xl md:text-8xl font-black mb-6 animate-gradient-x bg-gradient-to-r from-white via-[#40E0D0] to-white bg-clip-text text-transparent drop-shadow-lg">THE MIRROR WITHIN</h1>
+                                    <p className="text-xl md:text-2xl text-gray-300 mb-14 font-light">מסע עמוק אל תוך התודעה שלך. גלה את רמת האהבה העצמית שלך.</p>
+                                    <button onClick={() => setStage('quiz')} className="bg-[#40E0D0] text-black px-12 py-5 rounded-full text-xl font-bold hover:bg-white transition-all shadow-xl shadow-cyan-900/20">התחל מסע</button>
+                                </motion.div>
+                            )}
+
+                            {stage === 'quiz' && (
+                                <motion.div key="quiz" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="w-full max-w-3xl">
+                                    <div className="bg-black/40 backdrop-blur-2xl border border-white/10 p-10 md:p-14 rounded-[2.5rem] shadow-2xl">
+                                        <div className="text-[#40E0D0] mb-6 font-mono">שאלה {currentQuestion + 1} // {QUESTIONS.length}</div>
+                                        <h2 className="text-3xl md:text-4xl font-semibold mb-12">{QUESTIONS[currentQuestion].text}</h2>
+                                        <div className="space-y-4">
+                                            {OPTIONS.map(opt => (
+                                                <button key={opt.value} onClick={() => handleAnswer(opt.value)} className="w-full text-right px-8 py-5 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-[#40E0D0]/10 hover:border-[#40E0D0]/50 transition-all group flex justify-between items-center">
+                                                    <span className="text-xl group-hover:text-white">{opt.label}</span>
+                                                    <div className="w-4 h-4 rounded-full border border-gray-600 group-hover:bg-[#40E0D0]"></div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+
+                            {stage === 'results' && (() => {
+                                const res = calculateResults();
+                                return (
+                                    <motion.div key="results" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-6xl text-center py-12">
+                                        <AnimatedScore score={res.score100} />
+                                        <h2 className="text-5xl md:text-7xl font-black text-[#40E0D0] mb-8">המסע הושלם</h2>
+                                        <RadarChart scores={res.categoryAverages} />
+                                        <button onClick={() => setStage('landing')} className="mt-12 text-gray-400 hover:text-[#40E0D0] transition-colors flex items-center gap-2 mx-auto border border-white/10 px-6 py-2 rounded-full">
+                                            <RefreshCcw className="w-5 h-5" /> התחל מסע מחדש
+                                        </button>
+                                    </motion.div>
+                                );
+                            })()}
+                        </AnimatePresence>
+                    </main>
+                </div>
+            );
         }
-        .animate-gradient-x {
-          background-size: 200% 200%;
-          animation: gradient-x 4s linear infinite;
-        }
-        @keyframes gradient-x {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-      `}} />
-    </div>
-  );
-}
 
-
-```
+        // רינדור האפליקציה לדף
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
